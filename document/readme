@@ -1,0 +1,8 @@
+需要社区工具：parquet-tools-1.6.0rc3-SNAPSHOT.jar
+git project: https://github.com/apache/parquet-mr/tree/master/parquet-tools?spm=5176.doc52798.2.6.H3s2kL
+查看结构：
+java -jar parquet-tools-1.6.0rc3-SNAPSHOT.jar schema -d part-r-00124.parquet
+查看内容：
+java -jar parquet-tools-1.6.0rc3-SNAPSHOT.jar head -n 2 part-r-00124.parquet
+社区支持
+https://github.com/apache/parquet-mr
