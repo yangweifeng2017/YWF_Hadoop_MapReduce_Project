@@ -18,7 +18,6 @@ public class ParquetResultData {
     public void setListGroup(List<Group> listGroup) {
         this.listGroup = listGroup;
     }
-
     public String getSchema() {
         return Schema;
     }

@@ -3,6 +3,84 @@ git project: https://github.com/apache/parquet-mr/tree/master/parquet-tools?spm=
 查看结构：
 java -jar parquet-tools-1.6.0rc3-SNAPSHOT.jar schema -d part-r-00124.parquet
 查看内容：
-java -jar parquet-tools-1.6.0rc3-SNAPSHOT.jar head -n 2 part-r-00124.parquet
+java -jar parquet-tools-1.6.0rc3-SNAPSHOT.jar head -n 20 part-r-00124.parquet
 社区支持
 https://github.com/apache/parquet-mr
+https://github.com/cloudera/parquet-examples/blob/master/MapReduce/TestReadParquet.java
+---------------------------------------------------
+message person{
+  required binary name (UTF8);
+  required int age;
+  repeated group family{
+    required binary father (UTF8);
+    required binary mother (UTF8);
+    optional binary sister (UTF8);
+  }
+}
+message
+固定声明，就像结构体中的struct一样。
+person
+message name，可以粗暴的理解为表名，因为里面都是field。
+optional，required，repeated
+这是三种field的关键字，分别表示
+optional 可选，
+required 必选，
+repeated 可重复选
+可选和必选类似数据库中的nullable，可重复选是为了支持复杂的嵌套结构。
+field类型
+目前parquet支持int32,int64,int96(有些系统会把时间戳存成int96如老版本hive),float,double,boolean,binary,fixed_len_byte_array
+参考类org.apache.parquet.schema. PrimitiveType.PrimitiveTypeName
+UTF8
+field的原始类型（Original Type），可以辅助field的type进行细粒度的类型判断。
+参考类 org.apache.parquet.schema. OriginalType
+group
+嵌套结构声明，类似json对象
+-----------------------------------------------------
+键值对存储
+message hive_schema {
+  optional binary os (UTF8);
+  optional binary event_id (UTF8);
+  optional group event_paralist (MAP) {
+    repeated group map (MAP_KEY_VALUE) {
+      required binary key (UTF8);
+      optional binary value (UTF8);
+    }
+  }
+  optional binary server_time (UTF8);
+}
+进而可以衍生出list 集合
+-------------------------------------
+数据模型
+Parquet支持嵌套的数据模型，类似于Protocol Buffers，每一个数据模型的schema包含多个字段，每一个字段又可以包含多个字段，每一个字段有三个属性：重复数、数据类型和字段名，重复数可以是以下三种：required(出现1次)，repeated(出现0次或多次)，optional(出现0次或1次)。每一个字段的数据类型可以分成两种：group(复杂类型)和primitive(基本类型)。例如Dremel中提供的Document的schema示例，它的定义如下：
+message Document {
+    required int64 DocId;
+    optional group Links {
+        repeated int64 Backward;
+        repeated int64 Forward;
+    }
+    repeated group Name {
+        repeated group Language {
+            required string Code;
+            optional string Country;
+        }
+        optional string Url;
+    }
+}
+---------------------------------------
+项目组成
+Parquet项目由以下几个子项目组成:
+parquet-format项目由java实现，它定义了所有Parquet元数据对象，Parquet的元数据是使用Apache Thrift进行序列化并存储在Parquet文件的尾部。
+parquet-format项目由java实现，它包括多个模块，包括实现了读写Parquet文件的功能，并且提供一些和其它组件适配的工具，例如Hadoop Input/Output Formats、Hive Serde(目前Hive已经自带Parquet了)、Pig loaders等。
+parquet-compatibility项目，包含不同编程语言之间(JAVA和C/C++)读写文件的测试代码。
+parquet-cpp项目，它是用于用于读写Parquet文件的C++库。
+------------------------------------
+列式存储和行式存储相比有哪些优势呢？
+1.可以跳过不符合条件的数据，只读取需要的数据，降低IO数据量。
+2.压缩编码可以降低磁盘存储空间。由于同一列的数据类型是一样的，可以使用更高效的压缩编码（例如Run Length Encoding和Delta Encoding）进一步节约存储空间。
+3.只读取需要的列，支持向量运算，能够获取更好的扫描性能。
+当时Twitter的日增数据量达到压缩之后的100TB+，存储在HDFS上，工程师会使用多种计算框架（例如MapReduce, Hive, Pig等）对这些数据做分析和挖掘；日志结构是复杂的嵌套数据类型，
+例如一个典型的日志的schema有87列，嵌套了7层。所以需要设计一种列式存储格式，既能支持关系型数据（简单数据类型），又能支持复杂的嵌套类型的数据，同时能够适配多种数据处理框架。
+关系型数据的列式存储，可以将每一列的值直接排列下来，不用引入其他的概念，也不会丢失数据。关系型数据的列式存储比较好理解，而嵌套类型数据的列存储则会遇到一些麻烦。
+如图1所示，我们把嵌套数据类型的一行叫做一个记录（record)，嵌套数据类型的特点是一个record中的column除了可以是Int, Long, String这样的原语（primitive）类型以外，
+还可以是List, Map, Set这样的复杂类型。在行式存储中一行的多列是连续的写在一起的，在列式存储中数据按列分开存储，
+例如可以只读取A.B.C这一列的数据而不去读A.E和A.B.D，那么如何根据读取出来的各个列的数据重构出一行记录呢？
