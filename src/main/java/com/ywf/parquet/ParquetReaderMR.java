@@ -28,7 +28,7 @@ public class ParquetReaderMR implements YWFModel {
     public void execute(String[] args) throws Exception {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "ParquetReaderMR");
-        job.setJarByClass(ParquetReaderAndWriteMRDemo.class);
+        job.setJarByClass(ParquetReaderMR.class);
         job.setMapperClass(ParquetReaderMRMapper.class);
         job.setNumReduceTasks(0);
         job.setInputFormatClass(ParquetInputFormat.class);
