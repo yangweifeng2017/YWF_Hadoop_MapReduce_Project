@@ -1,6 +1,7 @@
 package com.ywf.parquet;
 
 import com.ywf.interfaces.YWFModel;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -18,21 +19,35 @@ import java.util.*;
 
 /**
  * ClassName HDFSReadAndWriter
- * 运行方式与参数: com.ywf.parquet.HDFSReadAndWriter
+ * 运行方式与参数: java -jar YWF_Hadoop_MapReduce_Project-1.0-jar-with-dependencies.jar com.ywf.parquet.HDFSReadAndWriter /user/hive/warehouse/event_info_v2.db/easou_log/ds=2018-01-31/000218_0
  * Author yangweifeng
+ *
  * Date 2019-04-17 19:18
  * Version 1.0
  **/
 public class HDFSReadAndWriter implements YWFModel {
     @Override
     public void execute(String[] args) throws Exception {
-        /*
-        List<Group> list = readParquetFromHDFS("/user/hive/warehouse/angela.db/t_books_vip_summary_for_cp/ds=2019-03");
-        for (Group group : list){
-           System.out.println(group);
+         /*
+          //map类型读取
+        ParquetResultData parquetResultData = readParquetFromHDFS(args[0]);
+        for (Group group : parquetResultData.getListGroup()){
+            Group event_paralist = group.getGroup("event_paralist",0);
+            System.out.println(event_paralist);
+            //获取重复次数
+            Integer num  = event_paralist.getFieldRepetitionCount("map");
+            System.out.println("重复次数" + num);
+            for (int i = 0; i < num; i++) {
+                Group group1 = event_paralist.getGroup("map",i); //第二个参数代表重复的位置index
+                System.out.println(i + "," + group1.getBinary("key",0).toStringUsingUTF8() + "," + group1.getBinary("value",0).toStringUsingUTF8());
+            }
+            break;
         }
-        writeParquetToHDFS("/user/weifeng/in/parquertData1/yangweifeng.parquet");
-        */
+         */
+        //-----------------------
+       // writeParquetToHDFS("/user/weifeng/in/parquertData1/yangweifeng.parquet");
+        writeParquetToRepeatedHDFS("/user/weifeng/in/parquertData1/map.parquet");
+        /*
         List<HashMap<String, String>> hashMapfile = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             HashMap<String, String> hashMap = new HashMap<>();
@@ -46,6 +61,7 @@ public class HDFSReadAndWriter implements YWFModel {
             hashMapfile.add(hashMap);
         }
         writeParquetToHDFS(hashMapfile,"/user/weifeng/in/parquertData1");
+         */
     }
 
     /**
@@ -91,7 +107,7 @@ public class HDFSReadAndWriter implements YWFModel {
         // 3. 写数据
         ParquetWriter<Group> writer = null;
         try {
-            writer = new ParquetWriter<Group>(path,ParquetFileWriter.Mode.CREATE,writeSupport,CompressionCodecName.UNCOMPRESSED,128*1024*1024,5*1024*1024,5*1024*1024,ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,ParquetWriter.DEFAULT_WRITER_VERSION,ParquetSchemaCreateFactory.getConfiguration());
+            writer = new ParquetWriter<Group>(path,ParquetFileWriter.Mode.OVERWRITE,writeSupport,CompressionCodecName.UNCOMPRESSED,128*1024*1024,5*1024*1024,5*1024*1024,ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,ParquetWriter.DEFAULT_WRITER_VERSION,ParquetSchemaCreateFactory.getConfiguration());
             Random random = new Random();
             for(int i=0; i<10; i++){
                 // 4. 构建parquet数据，封装成group
@@ -101,7 +117,80 @@ public class HDFSReadAndWriter implements YWFModel {
                         .append("age",i)
                         .addGroup("group1")
                         .append("test1", "test1"+i)
-                        .append("test2","test2"+i);
+                        .append("test2", "test2"+i);
+                writer.write(group);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(writer != null){
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * HDFS文件写入
+     * @param filePath
+     */
+    public static void writeParquetToRepeatedHDFS(String filePath){
+        // 1. 声明parquet的messageType
+        MessageType messageType = ParquetSchemaCreateFactory.getMessageTypeFromStringCode();
+        System.out.println(messageType.toString());
+        // 2. 声明parquetWriter
+        Path path = new Path(filePath);
+        GroupWriteSupport.setSchema(messageType, ParquetSchemaCreateFactory.getConfiguration());
+        GroupWriteSupport writeSupport = new GroupWriteSupport();
+        // 3. 写数据
+        ParquetWriter<Group> writer = null;
+        try {
+            writer = new ParquetWriter<Group>(path,ParquetFileWriter.Mode.CREATE,writeSupport,CompressionCodecName.UNCOMPRESSED,128*1024*1024,5*1024*1024,5*1024*1024,ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,ParquetWriter.DEFAULT_WRITER_VERSION,ParquetSchemaCreateFactory.getConfiguration());
+            Random random = new Random();
+            for(int i=0; i<10; i++){
+                // 4. 构建parquet数据，封装成group
+                Group group = new SimpleGroupFactory(messageType).newGroup();
+                /*
+                Group event_paralist = new SimpleGroupFactory(ParquetSchemaCreateFactory.getMessageTypeFromStringCode1()).newGroup();
+                for (int j = 0; j < 10; j++) {
+                    Group map = new SimpleGroupFactory(ParquetSchemaCreateFactory.getMessageTypeFromStringCode2()).newGroup();
+                    map.add(0,"111");
+                    event_paralist.add(j,map);
+                }*/
+                group.append("os", i+"@qq.com")
+                        .append("phone_udid2",i+"@id")
+                        .append("phone_softversion","111")
+                        .append("last_cpid","111")
+                        .append("package_name","111")
+                        .append("appkey","111")
+                        .append("sdk_version","111")
+                        .append("cpid","111")
+                        .append("type","111")
+                        .append("phone_imei","111")
+                        .append("phone_apn","111")
+                        .append("phone_udid","111")
+                        .append("gatewayip","111")
+                        .append("phone_mac","111")
+                        .append("phone_imsi","111")
+                        .append("phone_city","111")
+                        .append("src_code","111")
+                        .append("status","111")
+                        .append("time","111")
+                        .append("event_id","111")
+                        .append("server_time","111")
+                        .addGroup("event_paralist")
+                        .addGroup("map")
+                        .append("key", "test1")
+                        .append("value", "test2")
+                        .addGroup("map")
+                        .append("key", "test1")
+                        .append("value", "test2")
+                        .addGroup("map")
+                        .append("key", "test1")
+                        .append("value", "test2");
                 writer.write(group);
             }
         } catch (IOException e) {
@@ -121,6 +210,7 @@ public class HDFSReadAndWriter implements YWFModel {
      * @param filePath 文件路径
      */
     public static ParquetResultData readParquetFromHDFS(String filePath) throws IOException {
+
         ParquetResultData parquetResultData = new ParquetResultData();
         List<Group> listGroup = new ArrayList<>();
         // 1. 声明readSupport
@@ -139,9 +229,42 @@ public class HDFSReadAndWriter implements YWFModel {
         boolean isFirst = true;
         // 2.通过parquetReader读文件
         ParquetReader<Group>reader = null;
+        Configuration configuration = ParquetSchemaCreateFactory.getConfiguration();
+        // 复杂类型 需要指定 scama
+        String schema = "message hive_schema {\n" +
+                "optional binary os (UTF8);\n" +
+                "optional binary phone_udid2 (UTF8);\n" +
+                "optional binary phone_softversion (UTF8);\n" +
+                "optional binary last_cpid (UTF8);\n" +
+                "optional binary package_name (UTF8);\n" +
+                "optional binary appkey (UTF8);\n" +
+                "optional binary sdk_version (UTF8);\n" +
+                "optional binary cpid (UTF8);\n" +
+                "optional binary currentnetworktype (UTF8);\n" +
+                "optional binary type (UTF8);\n" +
+                "optional binary phone_imei (UTF8);\n" +
+                "optional binary phone_apn (UTF8);\n" +
+                "optional binary phone_udid (UTF8);\n" +
+                "optional binary gatewayip (UTF8);\n" +
+                "optional binary phone_mac (UTF8);\n" +
+                "optional binary phone_imsi (UTF8);\n" +
+                "optional binary phone_city (UTF8);\n" +
+                "optional binary src_code (UTF8);\n" +
+                "optional binary status (UTF8);\n" +
+                "optional binary time (UTF8);\n" +
+                "optional binary event_id (UTF8);\n" +
+                "optional group event_paralist (MAP) {\n" +
+                "    repeated group map (MAP_KEY_VALUE) {\n" +
+                "      required binary key (UTF8);\n" +
+                "      optional binary value (UTF8);\n" +
+                "    }\n" +
+                "  }\n" +
+                "  optional binary server_time (UTF8);\n" +
+                "}\n";
+        configuration.set("parquet.read.schema",schema);
         try {
              for (Path path : listPath){
-                 reader = ParquetReader.builder(groupReadSupport, path).build();
+                 reader = ParquetReader.builder(groupReadSupport, path).withConf(configuration).build();
                  Group group;
                  while ((group = reader.read()) != null){
                      if (isFirst){
@@ -170,4 +293,5 @@ public class HDFSReadAndWriter implements YWFModel {
         parquetResultData.setListGroup(listGroup);
         return parquetResultData;
     }
+
 }

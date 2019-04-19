@@ -1,10 +1,7 @@
 package com.ywf.parquet;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.OriginalType;
-import org.apache.parquet.schema.PrimitiveType;
-import org.apache.parquet.schema.Types;
+import org.apache.parquet.schema.*;
 
 /**
  * ClassName ParquetSchemaCreateFactory
@@ -50,4 +47,64 @@ public class ParquetSchemaCreateFactory {
                         .named("trigger");
         return messageType;
     }
+
+    public static MessageType getMessageTypeFromStringCode(){
+        String schema = "message hive_schema {\n" +
+                "optional binary os (UTF8);\n" +
+                "optional binary phone_udid2 (UTF8);\n" +
+                "optional binary phone_softversion (UTF8);\n" +
+                "optional binary last_cpid (UTF8);\n" +
+                "optional binary package_name (UTF8);\n" +
+                "optional binary appkey (UTF8);\n" +
+                "optional binary sdk_version (UTF8);\n" +
+                "optional binary cpid (UTF8);\n" +
+                "optional binary currentnetworktype (UTF8);\n" +
+                "optional binary type (UTF8);\n" +
+                "optional binary phone_imei (UTF8);\n" +
+                "optional binary phone_apn (UTF8);\n" +
+                "optional binary phone_udid (UTF8);\n" +
+                "optional binary gatewayip (UTF8);\n" +
+                "optional binary phone_mac (UTF8);\n" +
+                "optional binary phone_imsi (UTF8);\n" +
+                "optional binary phone_city (UTF8);\n" +
+                "optional binary src_code (UTF8);\n" +
+                "optional binary status (UTF8);\n" +
+                "optional binary time (UTF8);\n" +
+                "optional binary event_id (UTF8);\n" +
+                "optional binary server_time (UTF8);\n" +
+                "optional group event_paralist (MAP) {\n" +
+                "    repeated group map (MAP_KEY_VALUE) {\n" +
+                "      required binary key (UTF8);\n" +
+                "      optional binary value (UTF8);\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n";
+        MessageType messageType =  MessageTypeParser.parseMessageType(schema);
+        return messageType;
+    }
+    public static MessageType getMessageTypeFromStringCode1(){
+        String schema = "message hive_schema {\n" +
+                "optional group event_paralist (MAP) {\n" +
+                "    repeated group map (MAP_KEY_VALUE) {\n" +
+                "      required binary key (UTF8);\n" +
+                "      optional binary value (UTF8);\n" +
+                "    }\n" +
+                "  }\n" +
+                "}\n";
+        MessageType messageType =  MessageTypeParser.parseMessageType(schema);
+        return messageType;
+    }
+
+    public static MessageType getMessageTypeFromStringCode2(){
+        String schema = "message hive_schema {\n" +
+                "    repeated group map (MAP_KEY_VALUE) {\n" +
+                "      required binary key (UTF8);\n" +
+                "      optional binary value (UTF8);\n" +
+                "    }\n" +
+                "}\n";
+        MessageType messageType =  MessageTypeParser.parseMessageType(schema);
+        return messageType;
+    }
+
+
 }
