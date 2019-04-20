@@ -290,5 +290,4 @@ public class HDFSReadAndWriter implements YWFModel {
         parquetResultData.setListGroup(listGroup);
         return parquetResultData;
     }
-
 }
