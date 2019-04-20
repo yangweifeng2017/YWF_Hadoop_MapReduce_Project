@@ -148,18 +148,11 @@ public class HDFSReadAndWriter implements YWFModel {
         // 3. 写数据
         ParquetWriter<Group> writer = null;
         try {
-            writer = new ParquetWriter<Group>(path,ParquetFileWriter.Mode.CREATE,writeSupport,CompressionCodecName.UNCOMPRESSED,128*1024*1024,5*1024*1024,5*1024*1024,ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,ParquetWriter.DEFAULT_WRITER_VERSION,ParquetSchemaCreateFactory.getConfiguration());
+            writer = new ParquetWriter<Group>(path,ParquetFileWriter.Mode.OVERWRITE,writeSupport,CompressionCodecName.UNCOMPRESSED,128*1024*1024,5*1024*1024,5*1024*1024,ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,ParquetWriter.DEFAULT_WRITER_VERSION,ParquetSchemaCreateFactory.getConfiguration());
             Random random = new Random();
             for(int i=0; i<10; i++){
                 // 4. 构建parquet数据，封装成group
                 Group group = new SimpleGroupFactory(messageType).newGroup();
-                /*
-                Group event_paralist = new SimpleGroupFactory(ParquetSchemaCreateFactory.getMessageTypeFromStringCode1()).newGroup();
-                for (int j = 0; j < 10; j++) {
-                    Group map = new SimpleGroupFactory(ParquetSchemaCreateFactory.getMessageTypeFromStringCode2()).newGroup();
-                    map.add(0,"111");
-                    event_paralist.add(j,map);
-                }*/
                 group.append("os", i+"@qq.com")
                         .append("phone_udid2",i+"@id")
                         .append("phone_softversion","111")
@@ -184,14 +177,18 @@ public class HDFSReadAndWriter implements YWFModel {
                         .addGroup("event_paralist")
                         .addGroup("map")
                         .append("key", "test1")
-                        .append("value", "test2")
-                        .addGroup("map")
-                        .append("key", "test1")
-                        .append("value", "test2")
-                        .addGroup("map")
-                        .append("key", "test1")
                         .append("value", "test2");
-                writer.write(group);
+                         //写 repeated 类型
+                         group.getGroup("event_paralist",0)
+                        .addGroup("map")
+                        .append("key", "test11")
+                        .append("value", "test22");
+
+                         group.getGroup("event_paralist",0)
+                        .addGroup("map")
+                        .append("key", "test111")
+                        .append("value", "test222");
+                 writer.write(group);
             }
         } catch (IOException e) {
             e.printStackTrace();

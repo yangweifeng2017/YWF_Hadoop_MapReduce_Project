@@ -82,29 +82,4 @@ public class ParquetSchemaCreateFactory {
         MessageType messageType =  MessageTypeParser.parseMessageType(schema);
         return messageType;
     }
-    public static MessageType getMessageTypeFromStringCode1(){
-        String schema = "message hive_schema {\n" +
-                "optional group event_paralist (MAP) {\n" +
-                "    repeated group map (MAP_KEY_VALUE) {\n" +
-                "      required binary key (UTF8);\n" +
-                "      optional binary value (UTF8);\n" +
-                "    }\n" +
-                "  }\n" +
-                "}\n";
-        MessageType messageType =  MessageTypeParser.parseMessageType(schema);
-        return messageType;
-    }
-
-    public static MessageType getMessageTypeFromStringCode2(){
-        String schema = "message hive_schema {\n" +
-                "    repeated group map (MAP_KEY_VALUE) {\n" +
-                "      required binary key (UTF8);\n" +
-                "      optional binary value (UTF8);\n" +
-                "    }\n" +
-                "}\n";
-        MessageType messageType =  MessageTypeParser.parseMessageType(schema);
-        return messageType;
-    }
-
-
 }
